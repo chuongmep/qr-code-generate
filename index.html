@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 600px;
+      width: 100%;
+    }
+    textarea, input, select, button {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      margin-bottom: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .actions button {
+      width: auto;
+      margin-right: 0.5rem;
+    }
+    #qrcode {
+      margin-top: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QR Code Generator</h1>
+    <label>Text or URL</label>
+    <textarea id="text" rows="3">https://example.com</textarea>
+
+    <label>Size (px)</label>
+    <input type="number" id="size" value="256" />
+
+    <label>Error Correction Level</label>
+    <select id="eclevel">
+      <option value="L">L - Low (7%)</option>
+      <option value="M" selected>M - Medium (15%)</option>
+      <option value="Q">Q - Quartile (25%)</option>
+      <option value="H">H - High (30%)</option>
+    </select>
+
+    <button id="generate">Generate</button>
+
+    <div class="actions">
+      <button id="downloadPNG">Download PNG</button>
+      <button id="downloadSVG">Download SVG</button>
+    </div>
+
+    <div id="qrcode"></div>
+  </div>
+
+  <!-- QRCode library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    const textInput = document.getElementById('text');
+    const sizeInput = document.getElementById('size');
+    const ecSelect = document.getElementById('eclevel');
+    const qrcodeDiv = document.getElementById('qrcode');
+    let lastDataUrl = '';
+
+    async function generateQRCode() {
+      const text = textInput.value;
+      const size = parseInt(sizeInput.value) || 256;
+      const ec = ecSelect.value;
+
+      if (!text) {
+        qrcodeDiv.innerHTML = '<p>Please enter text.</p>';
+        return;
+      }
+
+      try {
+        const opts = { errorCorrectionLevel: ec, width: size, margin: 1 };
+        lastDataUrl = await QRCode.toDataURL(text, opts);
+        qrcodeDiv.innerHTML = `<img src="${lastDataUrl}" width="${size}" height="${size}" alt="QR Code" />`;
+      } catch (err) {
+        console.error(err);
+        qrcodeDiv.innerHTML = '<p>Error generating QR Code.</p>';
+      }
+    }
+
+    function downloadPNG() {
+      if (!lastDataUrl) return;
+      const a = document.createElement('a');
+      a.href = lastDataUrl;
+      a.download = 'qrcode.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    async function downloadSVG() {
+      const text = textInput.value;
+      const size = parseInt(sizeInput.value) || 256;
+      const ec = ecSelect.value;
+      if (!text) return;
+      try {
+        const svgString = await QRCode.toString(text, { type: 'svg', errorCorrectionLevel: ec, width: size });
+        const blob = new Blob([svgString], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'qrcode.svg';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    document.getElementById('generate').addEventListener('click', generateQRCode);
+    document.getElementById('downloadPNG').addEventListener('click', downloadPNG);
+    document.getElementById('downloadSVG').addEventListener('click', downloadSVG);
+  </script>
+</body>
+</html>
